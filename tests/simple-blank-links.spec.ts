@@ -23,27 +23,29 @@ test.describe('Smart Blank Links Checker', () => {
         await page.goto('https://goha.vn');
         await page.waitForLoadState('domcontentloaded');
 
-        // Scroll through the entire page to trigger all animations and lazy loading
-        console.log('🔄 Scrolling through page to trigger all animations...');
+        // Single scroll to trigger all animations and collect blank links data
+        console.log('🔄 Single scroll through page to trigger animations and collect data...');
 
-        // Get the total page height
-        const pageHeight = await page.evaluate(() => document.body.scrollHeight);
-        const viewportHeight = await page.evaluate(() => window.innerHeight);
-
-        // Scroll down in steps to trigger all view effects
-        const scrollSteps = Math.ceil(pageHeight / viewportHeight);
-        for (let i = 0; i <= scrollSteps; i++) {
-            const scrollY = (i * viewportHeight);
-            await page.evaluate((y) => window.scrollTo(0, y), scrollY);
-            await page.waitForTimeout(1000); // Wait for animations
-        }
-
-        // Scroll back to top
-        await page.evaluate(() => window.scrollTo(0, 0));
-        await page.waitForTimeout(2000); // Wait for everything to settle
-
-        // Analyze and categorize blank links
+        // Analyze and categorize blank links during scroll
         const blankLinksAnalysis: BlankLinkResult = await page.evaluate(() => {
+            // Get page dimensions for scrolling
+            const pageHeight = document.body.scrollHeight;
+            const viewportHeight = window.innerHeight;
+            const scrollSteps = Math.ceil(pageHeight / viewportHeight);
+            
+            // Single scroll through page to trigger all animations
+            for (let i = 0; i <= scrollSteps; i++) {
+                const scrollY = (i * viewportHeight);
+                window.scrollTo(0, scrollY);
+                // Short delay for animations (synchronous)
+                const start = Date.now();
+                while (Date.now() - start < 500) { /* wait */ }
+            }
+            
+            // Scroll back to top
+            window.scrollTo(0, 0);
+            
+            // Now analyze blank links after everything is loaded
             const blankLinks = document.querySelectorAll('a[href="#"]');
             const result: BlankLinkResult = {
                 navigation: [],

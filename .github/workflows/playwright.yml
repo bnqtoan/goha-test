@@ -44,11 +44,18 @@ jobs:
         path: test-results/
         retention-days: 30
 
-  # Simulate deployment (for demonstration purposes)
-  simulate-deploy:
+  # Deploy test results to GitHub Pages for easy viewing
+  deploy:
     needs: test
     if: always()
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+      contents: read
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     
     steps:
     - name: Download test results
@@ -57,25 +64,14 @@ jobs:
         name: playwright-report
         path: ./playwright-report
         
-    - name: Simulate deployment preparation
-      run: |
-        echo "🚀 Simulating deployment preparation..."
-        echo "📁 Test report artifacts downloaded"
-        echo "📊 Report size: $(du -sh ./playwright-report | cut -f1)"
-        echo "📋 Report files:"
-        ls -la ./playwright-report/
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+      
+    - name: Upload to GitHub Pages
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: ./playwright-report
         
-    - name: Simulate deployment to staging
-      run: |
-        echo "🎯 Simulating deployment to staging environment..."
-        echo "✅ Upload to staging server: SIMULATED"
-        echo "🔗 Staging URL: https://staging.example.com/test-reports"
-        echo "⏱️  Deployment time: $(date)"
-        
-    - name: Simulate deployment validation
-      run: |
-        echo "🔍 Simulating deployment validation..."
-        echo "✅ Health check: PASSED"
-        echo "✅ Report accessibility: PASSED"  
-        echo "✅ Screenshots loading: PASSED"
-        echo "🎉 Deployment simulation completed successfully!"
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
