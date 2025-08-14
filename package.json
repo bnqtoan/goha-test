@@ -1,0 +1,30 @@
+{
+  "name": "goha-test-suite",
+  "version": "1.0.0",
+  "description": "Automated testing suite for GOHA website using Playwright",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:blank-links": "playwright test tests/simple-blank-links.spec.ts",
+    "test:forms": "playwright test tests/goha-form-submit.spec.ts",
+    "report": "playwright show-report",
+    "install:browsers": "playwright install"
+  },
+  "keywords": [
+    "playwright",
+    "testing",
+    "e2e",
+    "goha",
+    "blank-links",
+    "form-testing"
+  ],
+  "author": "GOHA Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@types/node": "^24.2.1"
+  }
+}

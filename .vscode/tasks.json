@@ -1,0 +1,13 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Blank Links Test",
+			"type": "shell",
+			"command": "npx playwright test",
+			"group": "test",
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}
