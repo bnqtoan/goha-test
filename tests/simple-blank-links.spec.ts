@@ -19,33 +19,34 @@ interface BlankLinkResult {
 
 test.describe('Smart Blank Links Checker', () => {
     test('should warn for navigation blank links but fail for content blank links', async ({ page }) => {
+        // Set longer timeout for this comprehensive test
+        test.setTimeout(90000); // 90 seconds
+        
         // Navigate to goha.vn
         await page.goto('https://goha.vn');
         await page.waitForLoadState('domcontentloaded');
 
-        // Single scroll to trigger all animations and collect blank links data
-        console.log('🔄 Single scroll through page to trigger animations and collect data...');
+        // Scroll through the entire page to trigger all animations and lazy loading
+        console.log('🔄 Scrolling through page to trigger all animations...');
 
-        // Analyze and categorize blank links during scroll
+        // Get the total page height
+        const pageHeight = await page.evaluate(() => document.body.scrollHeight);
+        const viewportHeight = await page.evaluate(() => window.innerHeight);
+
+        // Scroll down in steps to trigger all view effects
+        const scrollSteps = Math.ceil(pageHeight / viewportHeight);
+        for (let i = 0; i <= scrollSteps; i++) {
+            const scrollY = (i * viewportHeight);
+            await page.evaluate((y) => window.scrollTo(0, y), scrollY);
+            await page.waitForTimeout(800); // Slightly reduced wait for first pass
+        }
+
+        // Scroll back to top
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await page.waitForTimeout(1500); // Wait for everything to settle
+
+        // Analyze and categorize blank links
         const blankLinksAnalysis: BlankLinkResult = await page.evaluate(() => {
-            // Get page dimensions for scrolling
-            const pageHeight = document.body.scrollHeight;
-            const viewportHeight = window.innerHeight;
-            const scrollSteps = Math.ceil(pageHeight / viewportHeight);
-            
-            // Single scroll through page to trigger all animations
-            for (let i = 0; i <= scrollSteps; i++) {
-                const scrollY = (i * viewportHeight);
-                window.scrollTo(0, scrollY);
-                // Short delay for animations (synchronous)
-                const start = Date.now();
-                while (Date.now() - start < 500) { /* wait */ }
-            }
-            
-            // Scroll back to top
-            window.scrollTo(0, 0);
-            
-            // Now analyze blank links after everything is loaded
             const blankLinks = document.querySelectorAll('a[href="#"]');
             const result: BlankLinkResult = {
                 navigation: [],
@@ -57,11 +58,11 @@ test.describe('Smart Blank Links Checker', () => {
                 const element = link as HTMLElement;
                 const text = element.textContent?.trim() || '';
                 const rect = element.getBoundingClientRect();
-                
+
                 // Check if link is in navigation context
                 const nav = element.closest('nav, .nav, .navbar, .navigation, .menu, header, .bricks-nav-menu-wrapper, .bricks-mobile-menu-wrapper');
                 const footer = element.closest('footer, .footer');
-                
+
                 const position = {
                     top: Math.round(rect.top + window.scrollY),
                     left: Math.round(rect.left)
@@ -173,6 +174,18 @@ test.describe('Smart Blank Links Checker', () => {
         // Wait for highlighting to apply
         await page.waitForTimeout(1000);
 
+        // Scroll through page again to ensure all highlighted links are visible in viewport
+        console.log('🔄 Second scroll to capture all highlighted links...');
+        for (let i = 0; i <= scrollSteps; i++) {
+            const scrollY = (i * viewportHeight);
+            await page.evaluate((y) => window.scrollTo(0, y), scrollY);
+            await page.waitForTimeout(500); // Shorter wait for second pass
+        }
+
+        // Scroll back to top for final screenshot
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await page.waitForTimeout(1000);
+
         // Take screenshot with highlighted links
         const screenshot = await page.screenshot({
             path: 'test-results/blank-links-categorized.png',
@@ -188,7 +201,7 @@ test.describe('Smart Blank Links Checker', () => {
         // Log detailed results
         console.log('\n📊 BLANK LINKS ANALYSIS RESULTS:');
         console.log('═══════════════════════════════════════════════════════════════');
-        
+
         if (blankLinksAnalysis.navigation.length > 0) {
             console.log(`\n⚠️  NAVIGATION BLANK LINKS (${blankLinksAnalysis.navigation.length}) - WARNING ONLY:`);
             blankLinksAnalysis.navigation.forEach((link, index) => {
@@ -228,7 +241,7 @@ test.describe('Smart Blank Links Checker', () => {
 
         // ONLY FAIL if there are content blank links (critical errors)
         // Navigation blank links are just warnings (acceptable for dropdown menus)
-        expect(blankLinksAnalysis.content.length, 
+        expect(blankLinksAnalysis.content.length,
             `Found ${blankLinksAnalysis.content.length} CRITICAL blank links in content areas that need fixing: ${blankLinksAnalysis.content.map(link => `"${link.text}"`).join(', ')}`
         ).toBe(0);
 
